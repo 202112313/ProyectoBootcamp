@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UP SUAMOX - Boyacá y Cundinamarca</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome para iconos de redes sociales -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .active-tab {
+            border-bottom: 3px solid #3b82f6;
+            font-weight: 600;
+            color: #1e40af;
+        }
+        .active-category {
+            font-weight: 600;
+        }
+        .destination-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        /* Estilos para la vista de detalle */
+        .detail-view {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .detail-view.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .detail-content {
+            background-color: white;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); /* shadow-2xl */
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            position: relative; /* Para el botón de cerrar */
+        }
+        .detail-view.active .detail-content {
+            transform: translateY(0);
+        }
+        .close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #ef4444; /* Cambiado a un rojo más visible */
+            transition: color 0.2s ease;
+        }
+        .close-button:hover {
+            color: #dc2626; /* Un rojo más oscuro al pasar el ratón */
+        }
+
+        /* New styles for auth UI */
+        .auth-container {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 50; /* Ensure it's above other elements if needed */
+        }
+
+        .user-menu-dropdown {
+            position: relative;
+        }
+
+        .user-menu-content {
+            position: absolute;
+            top: 100%; /* Position below the user icon */
+            left: 0;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 0.5rem 0;
+            min-width: 120px;
+            z-index: 100;
+            display: none; /* Hidden by default */
+        }
+
+        .user-menu-content.active {
+            display: block;
+        }
+
+        .user-menu-content a {
+            display: block;
+            padding: 0.5rem 1rem;
+            color: #333;
+            text-decoration: none;
+            transition: background-color 0.2s ease;
+        }
+
+        .user-menu-content a:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* Custom Scrollbar for Chatbot */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-md relative">
+        <div class="container mx-auto px-4 py-4">
+            <!-- Auth Buttons / User Icon -->
+            <div id="authUIContainer" class="auth-container">
+                <!-- Buttons will be injected here by JS -->
+            </div>
+
+            <div class="flex justify-center">
+                <div class="flex items-center">
+                    <img src="logo pagina.jpg" alt="Logo UP SUAMOX" class="mr-1 max-w-[200px] h-auto">
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <nav class="flex justify-center space-x-1">
+                    <button onclick="showTab('search')" class="px-4 py-2 tab-button active-tab">Búsqueda</button>
+                    <button onclick="showTab('recommendations')" class="px-4 py-2 tab-button">Recomendaciones</button>
+                    <button onclick="showTab('trends')" class="px-4 py-2 tab-button">Tendencias</button>
+                    <button onclick="showTab('preferences')" class="px-4 py-2 tab-button">Preferencias</button>
+                    <!-- Nuevo botón para la pestaña de Contacto -->
+                    <button onclick="showTab('contact')" class="px-4 py-2 tab-button">Contacto</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Search Parameters Box - Ahora con ID para controlarlo con JS -->
+    <div id="searchParamsBox" class="container mx-auto px-4 py-6 bg-blue-50 rounded-lg shadow-sm mt-2 mb-6">
+        <form class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de llegada</label>
+                <input type="date" class="w-full p-2 border rounded-md">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de salida</label>
+                <input type="date" class="w-full p-2 border rounded-md">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Personas</label>
+                <select class="w-full p-2 border rounded-md">
+                    <option>1 persona</option>
+                    <option>2 personas</option>
+                    <option selected>3-5 personas</option>
+                    <option>6+ personas</option>
+                </select>
+            </div>
+      <div>
+    <label class="block text-sm font-medium text-gray-700 mb-1">Presupuesto (COP)</label>
+    <input type="number" min="0" step="1000" placeholder="Ej: 500000" class="w-full p-2 border rounded-md" id="budgetInput">
+</div>
+
+            <button type="submit" class="md:col-span-4 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
+                Buscar opciones
+            </button>
+        </form>
+    </div>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-4">
+        <!-- Search Tab -->
+        <div id="search" class="tab-content">
+            <div class="mb-8">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Explora Boyacá y Cundinamarca</h2>
+                <div class="relative">
+                    <input type="text" placeholder="Buscar destinos, actividades o servicios..." 
+                        class="w-full p-4 pl-12 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <div class="absolute left-3 top-4 text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-4 mt-4">
+                    <button onclick="showCategoryResults('all')" class="px-4 py-2 bg-blue-100 text-blue-800 rounded-full category-button active-category transition hover:bg-blue-200">Todos</button>
+                    <button onclick="showCategoryResults('nature')" class="px-4 py-2 bg-gray-100 text-gray-800 rounded-full category-button transition hover:bg-gray-200">Naturaleza</button>
+                    <button onclick="showCategoryResults('cultural')" class="px-4 py-2 bg-gray-100 text-gray-800 rounded-full category-button transition hover:bg-gray-200">Cultural</button>
+                    <button onclick="showCategoryResults('adventure')" class="px-4 py-2 bg-gray-100 text-gray-800 rounded-full category-button transition hover:bg-gray-200">Aventura</button>
+                    <button onclick="showCategoryResults('gastronomy')" class="px-4 py-2 bg-gray-100 text-gray-800 rounded-full category-button transition hover:bg-gray-200">Gastronomía</button>
+                </div>
+                <!-- Contenedor para los resultados de la categoría, ahora con grid -->
+                <div id="categoryResults" class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Las tarjetas de destino se generarán aquí dinámicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations Tab -->
+        <div id="recommendations" class="tab-content hidden">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">Recomendaciones para ti</h2>
+            <div class="bg-white p-6 rounded-xl shadow-md mb-6">
+                <h3 class="text-xl font-medium mb-4">Basado en tus intereses</h3>
+                <div id="user-recommendations" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Recommendations will be inserted here by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h3 class="text-xl font-medium mb-4">Los más populares</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white rounded-xl overflow-hidden shadow-md cursor-pointer" onclick="showDestinationDetail('Catedral de Sal de Zipaquirá')">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/f97b637d-b256-4ba2-910a-d62f5763b3c4.png" alt="Catedral de Sal" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <div class="flex items-center mb-2">
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm mr-2">#1</span>
+                                <h4 class="font-medium">Catedral de Sal de Zipaquirá</h4>
+                            </div>
+                            <p class="text-sm text-gray-600">Maravilla arquitectónica construida dentro de una mina de sal.</p>
+                        </div>
+                    </div>
+                    <div class="border rounded-lg p-4 cursor-pointer" onclick="showDestinationDetail('Puente de Boyacá')">
+                        <div class="flex items-center mb-2">
+                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm mr-2">#2</span>
+                            <h4 class="font-medium">Puente de Boyacá</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">Sitio histórico donde se libró la batalla que aseguró la independencia.</p>
+                    </div>
+                    <div class="border rounded-lg p-4 cursor-pointer" onclick="showDestinationDetail('Santuario de Flora y Fauna de Iguaque')">
+                        <div class="flex items-center mb-2">
+                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm mr-2">#3</span>
+                            <h4 class="font-medium">Santuario de Flora y Fauna de Iguaque</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">Reserva natural con lagunas sagradas y diversidad de flora y fauna.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trends Tab -->
+        <div id="trends" class="tab-content hidden">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">Tendencias de viaje</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-medium mb-4">Destinos más buscados</h3>
+                    <canvas id="popularDestinationsChart"></canvas>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-medium mb-4">Actividades preferidas</h3>
+                    <canvas id="activitiesChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h3 class="text-xl font-medium mb-4">Temporalidad de visitas</h3>
+                <canvas id="seasonalityChart"></canvas>
+                <div class="mt-4 text-sm text-gray-600">
+                    <p>Los meses de junio a agosto y diciembre son los de mayor afluencia turística, coincidiendo con temporadas vacacionales.</p>
+                </div>
+            </div>
+            
+            <div class="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <button onclick="generateReport()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd" />
+                    </svg>
+                    Generar Reporte Completo
+                </button>
+                <div id="reportOutput" class="mt-4 hidden bg-white p-4 rounded border">
+                    <!-- Report will be inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Preferences Tab -->
+        <div id="preferences" class="tab-content hidden">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">Tus Preferencias</h2>
+            
+            <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                <h3 class="text-xl font-medium mb-4">Intereses turísticos</h3>
+                <form id="preferencesForm" class="space-y-4">
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" name="interest" value="nature" class="rounded text-blue-600">
+                            <span>Naturaleza</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" name="interest" value="cultural" class="rounded text-blue-600">
+                            <span>Cultural</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" name="interest" value="adventure" class="rounded text-blue-600">
+                            <span>Aventura</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" name="interest" value="gastronomy" class="rounded text-blue-600">
+                            <span>Gastronomía</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" name="interest" value="religious" class="rounded text-blue-600">
+                            <span>Religioso</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" name="interest" value="rural" class="rounded text-blue-600">
+                            <span>Turismo rural</span>
+                        </label>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h3 class="text-xl font-medium mb-4">Tus favoritos</h3>
+                <div id="savedDestinations" class="space-y-3">
+                    <!-- Saved destinations will appear here -->
+                    <p class="text-gray-500 italic">Aún no tienes destinos guardados. Explora y guarda tus favoritos.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Contact Tab -->
+        <div id="contact" class="tab-content hidden">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">Información de Contacto</h2>
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h3 class="text-xl font-medium mb-4">Nuestro Equipo</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                    <!-- Contact Person 1 -->
+                    <div class="border rounded-lg p-4 bg-gray-50">
+                        <h4 class="font-semibold text-lg mb-2">Juan Pérez</h4>
+                        <p class="text-gray-700">Teléfono: +57 300 123 4567</p>
+                        <p class="text-gray-700">Correo Electrónico: juan.perez@example.com</p>
+                        <div class="flex space-x-4 mt-3">
+                            <a href="https://www.instagram.com/juanperez_simulado" target="_blank" class="text-pink-600 hover:text-pink-800 text-2xl"><i class="fab fa-instagram"></i></a>
+                            <a href="https://www.facebook.com/juanperez.simulado" target="_blank" class="text-blue-700 hover:text-blue-900 text-2xl"><i class="fab fa-facebook"></i></a>
+                            <a href="https://twitter.com/juanperez_sim" target="_blank" class="text-gray-800 hover:text-gray-900 text-2xl"><i class="fab fa-x-twitter"></i></a>
+                        </div>
+                    </div>
+                    <!-- Contact Person 2 -->
+                    <div class="border rounded-lg p-4 bg-gray-50">
+                        <h4 class="font-semibold text-lg mb-2">María García</h4>
+                        <p class="text-gray-700">Teléfono: +57 310 987 6543</p>
+                        <p class="text-gray-700">Correo Electrónico: maria.garcia@example.com</p>
+                        <div class="flex space-x-4 mt-3">
+                            <a href="https://www.instagram.com/mariag_simulada" target="_blank" class="text-pink-600 hover:text-pink-800 text-2xl"><i class="fab fa-instagram"></i></a>
+                            <a href="https://www.facebook.com/mariagarcia.simulada" target="_blank" class="text-blue-700 hover:text-blue-900 text-2xl"><i class="fab fa-facebook"></i></a>
+                            <a href="https://twitter.com/mariag_sim" target="_blank" class="text-gray-800 hover:text-gray-900 text-2xl"><i class="fab fa-x-twitter"></i></a>
+                        </div>
+                    </div>
+                    <!-- Contact Person 3 -->
+                    <div class="border rounded-lg p-4 bg-gray-50">
+                        <h4 class="font-semibold text-lg mb-2">Carlos Rodríguez</h4>
+                        <p class="text-gray-700">Teléfono: +57 320 555 1122</p>
+                        <p class="text-gray-700">Correo Electrónico: carlos.rodriguez@example.com</p>
+                        <div class="flex space-x-4 mt-3">
+                            <a href="https://www.instagram.com/carlosr_simulado" target="_blank" class="text-pink-600 hover:text-pink-800 text-2xl"><i class="fab fa-instagram"></i></a>
+                            <a href="https://www.facebook.com/carlosrodriguez.simulado" target="_blank" class="text-blue-700 hover:text-blue-900 text-2xl"><i class="fab fa-facebook"></i></a>
+                            <a href="https://twitter.com/carlosr_sim" target="_blank" class="text-gray-800 hover:text-gray-900 text-2xl"><i class="fab fa-x-twitter"></i></a>
+                        </div>
+                    </div>
+                    <!-- Contact Person 4 -->
+                    <div class="border rounded-lg p-4 bg-gray-50">
+                        <h4 class="font-semibold text-lg mb-2">Ana López</h4>
+                        <p class="text-gray-700">Teléfono: +57 301 222 3344</p>
+                        <p class="text-gray-700">Correo Electrónico: ana.lopez@example.com</p>
+                        <div class="flex space-x-4 mt-3">
+                            <a href="https://www.instagram.com/anal_simulada" target="_blank" class="text-pink-600 hover:text-pink-800 text-2xl"><i class="fab fa-instagram"></i></a>
+                            <a href="https://www.facebook.com/analopez.simulada" target="_blank" class="text-blue-700 hover:text-blue-900 text-2xl"><i class="fab fa-facebook"></i></a>
+                            <a href="https://twitter.com/anal_sim" target="_blank" class="text-gray-800 hover:text-gray-900 text-2xl"><i class="fab fa-x-twitter"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Destination Detail View (Hidden by default) -->
+    <div id="destinationDetailView" class="detail-view">
+        <div class="detail-content">
+            <button class="close-button" onclick="hideDestinationDetail()">&times;</button>
+            <img id="detailImage" src="" alt="Imagen del destino" class="w-full h-64 object-cover rounded-t-xl">
+            <div class="p-6">
+                <h2 id="detailName" class="text-3xl font-bold text-blue-800 mb-3"></h2>
+                <p id="detailDescription" class="text-gray-700 mb-4"></p>
+                
+                <!-- Nuevo botón para Google Maps -->
+                <div class="mb-6">
+                    <button id="googleMapsBtn" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 flex items-center">
+                        <i class="fas fa-map-marker-alt mr-2"></i> Ver en Google Maps
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">Gastronomía Típica</h3>
+                        <ul id="detailFood" class="list-disc list-inside text-gray-600 space-y-1"></ul>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">Bebidas Típicas</h3>
+                        <ul id="detailDrinks" class="list-disc list-inside text-gray-600 space-y-1"></ul>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Hoteles Recomendados</h3>
+                    <ul id="detailHotels" class="list-disc list-inside text-gray-600 space-y-1"></ul>
+                </div>
+
+                <!-- Nueva sección para Restaurantes -->
+                <div id="detailRestaurantsSection" class="mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Restaurantes Recomendados</h3>
+                    <ul id="detailRestaurants" class="list-disc list-inside text-gray-600 space-y-1"></ul>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Otras Actividades de Interés</h3>
+                    <ul id="detailActivities" class="list-disc list-inside text-gray-600 space-y-1"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="detail-view">
+        <div class="detail-content">
+            <button class="close-button" onclick="hideLoginModal()">&times;</button>
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-blue-800 mb-4">Iniciar Sesión</h2>
+                <form id="loginForm" class="space-y-4">
+                    <div>
+                        <label for="loginUsername" class="block text-sm font-medium text-gray-700">Usuario</label>
+                        <input type="text" id="loginUsername" name="username" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" required>
+                    </div>
+                    <div>
+                        <label for="loginPassword" class="block text-sm font-medium text-gray-700">Contraseña</label>
+                        <input type="password" id="loginPassword" name="password" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" required>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Iniciar Sesión</button>
+                </form>
+                <p class="mt-4 text-center text-sm text-gray-600">¿No tienes cuenta? <a href="#" onclick="showRegisterModal(); hideLoginModal();" class="text-blue-600 hover:underline">Regístrate aquí</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="detail-view">
+        <div class="detail-content">
+            <button class="close-button" onclick="hideRegisterModal()">&times;</button>
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-blue-800 mb-4">Registrarse</h2>
+                <form id="registerForm" class="space-y-4">
+                    <div>
+                        <label for="registerUsername" class="block text-sm font-medium text-gray-700">Usuario</label>
+                        <input type="text" id="registerUsername" name="username" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" required>
+                    </div>
+                    <div>
+                        <label for="registerEmail" class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
+                        <input type="email" id="registerEmail" name="email" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" required>
+                    </div>
+                    <div>
+                        <label for="registerPassword" class="block text-sm font-medium text-gray-700">Contraseña</label>
+                        <input type="password" id="registerPassword" name="password" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" required>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Registrarse</button>
+                </form>
+                <p class="mt-4 text-center text-sm text-gray-600">¿Ya tienes cuenta? <a href="#" onclick="showLoginModal(); hideRegisterModal();" class="text-blue-600 hover:underline">Inicia sesión aquí</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">UP SUAMOX</h3>
+                    <p class="text-gray-300">Conectando viajeros con los tesoros de Boyacá y Cundinamarca.</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Enlaces útiles</h3>
+                    <ul class="space-y-2">
+                        <li><a href="https://mapas.cundinamarca.gov.co/pages/datos-abiertos?utm" class="text-gray-300 hover:text-white">Datos Abiertos Cundinamarca</a></li>
+                        <li><a href="https://www.datos.gov.co/Comercio-Industria-y-Turismo/Registro-Nacional-de-Turismo-RNT/thwd-ivmp/about_data" class="text-gray-300 hover:text-white">RNT Colombia</a></li>
+                        <li><a href="https://www.datos.gov.co/?utm" class="text-gray-300 hover:text-white">Datos Abiertos Colombia</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Desarrollado para</h3>
+                    <p class="text-gray-300">Reto Hackathon 2025</p>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-6 text-sm text-gray-400">
+                <p>2025 UP SUAMOX.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Chatbot Container -->
+    <div id="chatbotContainer" class="fixed bottom-4 right-4 z-50">
+        <button id="openChatbotBtn" class="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105">
+            <i class="fas fa-comments text-2xl"></i>
+        </button>
+
+        <div id="chatbotWindow" class="hidden bg-white rounded-lg shadow-xl w-80 h-96 flex flex-col overflow-hidden">
+            <div class="bg-blue-600 text-white p-3 flex justify-between items-center">
+                <h3 class="font-semibold">UP SUAMOX Asistente</h3>
+                <button id="closeChatbotBtn" class="text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="chatMessages" class="flex-1 p-3 overflow-y-auto text-sm custom-scrollbar">
+                <!-- Messages will be appended here -->
+                <div class="flex justify-start mb-2">
+                    <div class="bg-gray-200 text-gray-800 p-2 rounded-lg max-w-[70%]">
+                        Hola, soy tu asistente de viajes de UP SUAMOX. ¿En qué puedo ayudarte hoy?
+                    </div>
+                </div>
+            </div>
+            <div class="border-t p-3 flex items-center">
+                <input type="text" id="chatInput" placeholder="Escribe tu mensaje..." class="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button id="sendMessageBtn" class="ml-2 bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data - in a real app this would come from an API
+        const destinations = {
+            "Laguna de Guatavita": {
+                type: "nature",
+                description: "Lago sagrado de los Muiscas, famoso por la leyenda de El Dorado.",
+                rating: 4,
+                popularity: 85,
+                image: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/f9fe31ee-a09d-4bb5-ad82-3bf0dc1d1fe3.png"
+            },
+            "Villa de Leyva": {
+                type: "cultural",
+                description: "Pueblo patrimonio con arquitectura colonial y fósiles prehistóricos.",
+                rating: 5,
+                popularity: 92,
+                image: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/45e1580d-2432-47d5-bba5-b4a3302697cb.png"
+            },
+            "Páramo de Chingaza": {
+                type: "adventure",
+                description: "Ecosistema único que provee agua a Bogotá, ideal para senderismo.",
+                rating: 4,
+                popularity: 78,
+                image: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/04db7020-3594-43c7-857e-97779276df58.png"
+            },
+            "Catedral de Sal de Zipaquirá": {
+                type: "cultural",
+                description: "Maravilla arquitectónica construida dentro de una mina de sal.",
+                rating: 5,
+                popularity: 95,
+                image: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/8ee59d17-568a-4527-be93-de8137e9fc93.png"
+            },
+            "Puente de Boyacá": {
+                type: "cultural",
+                description: "Sitio histórico donde se libró la batalla que aseguró la independencia.",
+                rating: 4,
+                popularity: 88,
+                image: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/6cc2bee7-07ea-4a67-a971-3af02233719c.png"
+            },
+            "Santuario de Flora y Fauna de Iguaque": {
+                type: "nature",
+                description: "Reserva natural con lagunas sagradas y diversidad de flora y fauna.",
+                rating: 5,
+                popularity: 90,
+                image: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/b07f7cfb-4980-42c8-bc0d-6a4f38b2406d.png"
+            }
+        };
+
+        // Detailed information for each destination
+        const fullDestinationDetails = {
+            "Laguna de Guatavita": {
+                description: "La Laguna de Guatavita es un cuerpo de agua natural ubicado en la Cordillera Oriental de Colombia, en el municipio de Sesquilé, Cundinamarca. Es famosa por ser el escenario de la leyenda de El Dorado, donde los Muiscas realizaban ceremonias de ofrenda al sol y a la luna, arrojando oro y esmeraldas al agua. Hoy en día, es un sitio de gran importancia cultural y ecológica, ofreciendo paisajes impresionantes y una conexión profunda con la historia precolombina.",
+                food: ["Ajiaco (sopa de pollo y tres tipos de papa)", "Fritanga (variedad de carnes y embutidos fritos)", "Trucha (pescado fresco de la región)"],
+                drinks: ["Chicha (bebida fermentada de maíz)", "Aguardiente (licor anisado)", "Jugo de feijoa"],
+                hotels: ["Hotel Cacique Guatavita", "Glamping Neusa", "Hotel Campestre La Colina"], // Mantener para compatibilidad, pero usaremos hotelsDetails
+                hotelsDetails: [
+                    {
+                        name: "Hotel Cacique Guatavita",
+                        phone: "+57 310 123 4567",
+                        email: "info@caciqueguatavita.com",
+                        social: {
+                            instagram: "https://www.instagram.com/caciqueguatavita",
+                            facebook: "https://www.facebook.com/caciqueguatavita"
+                        }
+                    },
+                    {
+                        name: "Glamping Neusa",
+                        phone: "+57 320 987 6543",
+                        email: "reservas@glampingneusa.com",
+                        social: {
+                            instagram: "https://www.instagram.com/glampingneusa"
+                        }
+                    }
+                ],
+                restaurants: [
+                    {
+                        name: "Restaurante El Dorado",
+                        phone: "+57 300 111 2233",
+                        email: "eldorado@example.com",
+                        social: {
+                            facebook: "https://www.facebook.com/restauranteeldorado"
+                        }
+                    }
+                ],
+                activities: ["Senderismo alrededor de la laguna", "Visitas guiadas sobre la leyenda de El Dorado", "Observación de aves", "Paseos a caballo en los alrededores"],
+                coordinates: { lat: 4.9283, lng: -73.8306 } // Coordenadas para Laguna de Guatavita
+            },
+            "Villa de Leyva": {
+                description: "Villa de Leyva es un hermoso pueblo colonial en Boyacá, conocido por su impresionante Plaza Mayor, una de las más grandes de Sudamérica. Sus calles empedradas y arquitectura bien conservada transportan a los visitantes a otra época. Es un centro cultural y turístico con una rica historia, museos, y una vibrante vida artística. Además, sus alrededores ofrecen paisajes únicos y sitios paleontológicos.",
+                food: ["Longaniza (embutido típico)", "Arepas boyacenses", "Cuchuco de trigo con espinazo", "Postres de leche"],
+                drinks: ["Sabajón (bebida a base de aguardiente y leche)", "Masato (bebida fermentada de arroz)", "Vino de frutas"],
+                hotels: ["Hotel Plazuela de San Agustín", "Hotel Spa Getsemaní", "Hotel La Posada de San Antonio"],
+                hotelsDetails: [
+                    {
+                        name: "Hotel Plazuela de San Agustín",
+                        phone: "+57 311 222 3344",
+                        email: "info@plazuelasanagustin.com",
+                        social: {
+                            instagram: "https://www.instagram.com/plazuelasanagustin",
+                            facebook: "https://www.facebook.com/plazuelasanagustin"
+                        }
+                    },
+                    {
+                        name: "Hotel Spa Getsemaní",
+                        phone: "+57 312 333 4455",
+                        email: "contacto@spagetsemani.com",
+                        social: {
+                            instagram: "https://www.instagram.com/spagetsemani"
+                        }
+                    }
+                ],
+                restaurants: [
+                    {
+                        name: "Restaurante La Villa",
+                        phone: "+57 301 444 5566",
+                        email: "lavilla@example.com",
+                        social: {
+                            facebook: "https://www.facebook.com/restaurante.lavilla"
+                        }
+                    },
+                    {
+                        name: "El Fogón Paisa",
+                        phone: "+57 302 555 6677",
+                        email: "elfogonpaisa@example.com",
+                        social: {
+                            instagram: "https://www.instagram.com/elfogonpaisa"
+                        }
+                    }
+                ],
+                activities: ["Visita a la Plaza Mayor", "Museo El Fósil", "Casa Terracota", "Viñedos y cata de vinos", "Paseos en cuatrimoto por los desiertos"],
+                coordinates: { lat: 5.6458, lng: -73.5208 } // Coordenadas para Villa de Leyva
+            },
+            "Páramo de Chingaza": {
+                description: "El Parque Nacional Natural Chingaza es un ecosistema de páramo vital para el suministro de agua a Bogotá y sus alrededores. Es un lugar de una belleza natural inigualable, caracterizado por sus frailejones, lagunas de origen glaciar y una biodiversidad única. Ideal para los amantes de la naturaleza y el senderismo, ofrece rutas que permiten apreciar la majestuosidad de la alta montaña andina.",
+                food: ["No hay restaurantes dentro del páramo; se recomienda llevar alimentos no perecederos.", "En los pueblos cercanos: Caldo de papa, Gallina campesina."],
+                drinks: ["Agua de panela con queso", "Aromáticas de hierbas locales"],
+                hotels: ["No hay hoteles dentro del parque; opciones en Guasca o La Calera: Hotel Campestre La Casona (Guasca)", "Hotel Boutique La Casona (La Calera)"],
+                hotelsDetails: [
+                    {
+                        name: "Hotel Campestre La Casona (Guasca)",
+                        phone: "+57 313 666 7788",
+                        email: "lacasona@example.com",
+                        social: {
+                            facebook: "https://www.facebook.com/lacasonaguasca"
+                        }
+                    }
+                ],
+                restaurants: [
+                    {
+                        name: "Restaurante La Calera",
+                        phone: "+57 303 777 8899",
+                        email: "lacalera@example.com",
+                        social: {
+                            instagram: "https://www.instagram.com/restaurante.lacalera"
+                        }
+                    }
+                ],
+                activities: ["Senderismo por rutas señalizadas (con guía obligatorio)", "Observación de flora y fauna (especialmente venados y aves)", "Fotografía de paisajes", "Educación ambiental"],
+                coordinates: { lat: 4.6667, lng: -73.7500 } // Coordenadas para Páramo de Chingaza (aproximadas)
+            },
+            "Catedral de Sal de Zipaquirá": {
+                description: "La Catedral de Sal de Zipaquirá es una maravilla arquitectónica y religiosa construida en el interior de una mina de sal. Es un sitio único en el mundo, donde la fe y la ingeniería se unen para crear un espacio subterráneo impresionante. Los visitantes pueden recorrer sus túneles, admirar las estaciones del Vía Crucis talladas en sal y la majestuosa cruz central.",
+                food: ["Empanadas de cambray", "Arepas de maíz con queso", "Postres de cuajada con melao"],
+                drinks: ["Chicha", "Masato", "Refrescos de frutas locales"],
+                hotels: ["Hotel Cacique Real", "Hotel Camino de la Sal", "Hotel Boutique El Libertador"],
+                hotelsDetails: [
+                    {
+                        name: "Hotel Cacique Real",
+                        phone: "+57 314 888 9900",
+                        email: "info@caciquereal.com",
+                        social: {
+                            instagram: "https://www.instagram.com/caciquereal"
+                        }
+                    },
+                    {
+                        name: "Hotel Camino de la Sal",
+                        phone: "+57 315 999 0011",
+                        email: "caminodelasal@example.com",
+                        social: {
+                            facebook: "https://www.facebook.com/caminodelasal"
+                        }
+                    }
+                ],
+                restaurants: [
+                    {
+                        name: "Restaurante La Cava",
+                        phone: "+57 304 000 1122",
+                        email: "lacava@example.com",
+                        social: {
+                            instagram: "https://www.instagram.com/lacava_zipa"
+                        }
+                    },
+                    {
+                        name: "El Mesón del Conquistador",
+                        phone: "+57 305 111 2233",
+                        email: "mesonconquistador@example.com",
+                        social: {
+                            facebook: "https://www.facebook.com/elmesondelconquistador"
+                        }
+                    }
+                ],
+                activities: ["Recorrido guiado por la Catedral de Sal", "Museo de la Sal", "Parque de la Sal", "Muro de escalada en roca", "Visita al centro histórico de Zipaquirá"],
+                coordinates: { lat: 5.0247, lng: -73.9906 } // Coordenadas para Catedral de Sal de Zipaquirá
+            },
+            "Puente de Boyacá": {
+                description: "El Puente de Boyacá es un monumento nacional y un sitio histórico de gran relevancia para Colombia. Fue el escenario de la Batalla de Boyacá el 7 de agosto de 1819, que selló la independencia de Colombia del dominio español. El lugar cuenta con varios monumentos y obeliscos que conmemoran a los héroes de la gesta libertadora, y es un punto de encuentro para la reflexión histórica.",
+                food: ["Cocido boyacense", "Mute boyacense", "Arepas de maíz pelado"],
+                drinks: ["Chicha", "Guarapo", "Aguardiente"],
+                hotels: ["Hotel Hunza (Tunja)", "Hotel Boyacá Plaza (Tunja)", "Hotel Panorama (Tunja)"],
+                hotelsDetails: [
+                    {
+                        name: "Hotel Hunza (Tunja)",
+                        phone: "+57 316 222 3344",
+                        email: "reservas@hotelhunza.com",
+                        social: {
+                            instagram: "https://www.instagram.com/hotelhunza"
+                        }
+                    },
+                    {
+                        name: "Hotel Boyacá Plaza (Tunja)",
+                        phone: "+57 317 333 4455",
+                        email: "info@boyacaplaza.com",
+                        social: {
+                            facebook: "https://www.facebook.com/hotelboyacaplaza"
+                        }
+                    }
+                ],
+                restaurants: [
+                    {
+                        name: "Restaurante Boyacense",
+                        phone: "+57 306 444 5566",
+                        email: "boyacense@example.com",
+                        social: {
+                            instagram: "https://www.instagram.com/restaurante.boyacense"
+                        }
+                    }
+                ],
+                activities: ["Recorrido por los monumentos históricos", "Visita al Centro de Interpretación Histórica", "Eventos conmemorativos (especialmente en agosto)", "Disfrutar del paisaje rural circundante"],
+                coordinates: { lat: 5.4767, lng: -73.3667 } // Coordenadas para Puente de Boyacá
+            },
+            "Santuario de Flora y Fauna de Iguaque": {
+                description: "El Santuario de Flora y Fauna de Iguaque es un área protegida en Boyacá, considerada sagrada por la cultura Muisca. Según la leyenda, de la Laguna de Iguaque emergió Bachué, la madre de la humanidad. El santuario protege ecosistemas de páramo y bosque altoandino, con una rica diversidad de flora y fauna. Es un lugar ideal para el ecoturismo, la investigación y la conexión espiritual con la naturaleza.",
+                food: ["No hay opciones de comida dentro del santuario; se recomienda llevar provisiones.", "En Arcabuco o Tunja: Trucha, Caldo de costilla."],
+                drinks: ["Agua de panela", "Aromáticas"],
+                hotels: ["Hotel Campestre El Refugio (Arcabuco)", "Hotel Casa de la Luna (Villa de Leyva, cercano)", "Cabañas rurales en los alrededores"],
+                hotelsDetails: [
+                    {
+                        name: "Hotel Campestre El Refugio (Arcabuco)",
+                        phone: "+57 318 555 6677",
+                        email: "elrefugio@example.com",
+                        social: {
+                            facebook: "https://www.facebook.com/elrefugioarcabuco"
+                        }
+                    }
+                ],
+                restaurants: [
+                    {
+                        name: "Restaurante La Trucha Dorada",
+                        phone: "+57 307 666 7788",
+                        email: "latrucha@example.com",
+                        social: {
+                            instagram: "https://www.instagram.com/latruchadorada"
+                        }
+                    }
+                ],
+                activities: ["Senderismo a la Laguna de Iguaque (con guía)", "Observación de aves y flora endémica", "Fotografía de paisajes", "Investigación científica (con permisos)"],
+                coordinates: { lat: 5.7000, lng: -73.4500 } // Coordenadas para Santuario de Flora y Fauna de Iguaque (aproximadas)
+            }
+        };
+
+        // User preferences (now managed per user)
+        let userPreferences = {
+            savedDestinations: [], // This will be for the current user
+            interests: []
+        };
+
+        // --- AUTHENTICATION SYSTEM ---
+        let users = JSON.parse(localStorage.getItem('registeredUsers')) || {};
+        let currentUser = localStorage.getItem('currentUser') || null;
+        let userSavedDestinations = JSON.parse(localStorage.getItem('userSavedDestinations')) || {};
+
+        // Function to save data to localStorage
+        function saveData() {
+            localStorage.setItem('registeredUsers', JSON.stringify(users));
+            localStorage.setItem('currentUser', currentUser);
+            localStorage.setItem('userSavedDestinations', JSON.stringify(userSavedDestinations));
+        }
+
+        // UI Elements
+        const authUIContainer = document.getElementById('authUIContainer');
+        const loginModal = document.getElementById('loginModal');
+        const registerModal = document.getElementById('registerModal');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+
+        function showLoginModal() {
+            loginModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideLoginModal() {
+            loginModal.classList.remove('active');
+            document.body.style.overflow = '';
+            loginForm.reset(); // Clear form fields
+        }
+
+        function showRegisterModal() {
+            registerModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideRegisterModal() {
+            registerModal.classList.remove('active');
+            document.body.style.overflow = '';
+            registerForm.reset(); // Clear form fields
+        }
+
+        function updateAuthUI() {
+            authUIContainer.innerHTML = ''; // Clear existing content
+
+            if (currentUser) {
+                // Logged in: Show user icon and name
+                const userMenuHtml = `
+                    <div class="user-menu-dropdown relative">
+                        <button id="userIconButton" class="flex items-center space-x-2 p-2 rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 transition">
+                            <i class="fas fa-user-circle text-xl"></i>
+                            <span class="font-semibold">${currentUser}</span>
+                        </button>
+                        <div id="userMenuContent" class="user-menu-content">
+                            <a href="#" id="savedPlacesLink">Lugares Guardados</a>
+                            <a href="#" id="logoutButton">Cerrar Sesión</a>
+                        </div>
+                    </div>
+                `;
+                authUIContainer.innerHTML = userMenuHtml;
+
+                // Add event listeners for the new elements
+                document.getElementById('userIconButton').addEventListener('click', toggleUserMenu);
+                document.getElementById('logoutButton').addEventListener('click', logoutUser);
+                document.getElementById('savedPlacesLink').addEventListener('click', () => {
+                    showTab('preferences'); // Switch to preferences tab
+                    hideUserMenu(); // Hide the dropdown
+                });
+
+                // Load user-specific saved destinations and interests
+                userPreferences.savedDestinations = userSavedDestinations[currentUser] ? userSavedDestinations[currentUser].savedDestinations : [];
+                userPreferences.interests = userSavedDestinations[currentUser] ? userSavedSavedDestinations[currentUser].interests : [];
+                
+                // Update preferences form checkboxes based on user interests
+                document.querySelectorAll('#preferencesForm input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = userPreferences.interests.includes(checkbox.value);
+                });
+
+            } else {
+                // Not logged in: Show login/signup buttons
+                const authButtonsHtml = `
+                    <button onclick="showLoginModal()" class="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">Iniciar Sesión</button>
+                    <button onclick="showRegisterModal()" class="px-3 py-1 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 text-sm">Registrarse</button>
+                `;
+                authUIContainer.innerHTML = authButtonsHtml;
+
+                // Clear user-specific data
+                userPreferences.savedDestinations = [];
+                userPreferences.interests = [];
+                document.querySelectorAll('#preferencesForm input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+            }
+            // Always update saved destinations and recommendations after UI change
+            updateSavedDestinations();
+            updateRecommendations();
+        }
+
+        function toggleUserMenu() {
+            document.getElementById('userMenuContent').classList.toggle('active');
+        }
+
+        function hideUserMenu() {
+            document.getElementById('userMenuContent').classList.remove('active');
+        }
+
+        // Close user menu if clicked outside
+        document.addEventListener('click', function(event) {
+            const userMenuDropdown = document.querySelector('.user-menu-dropdown');
+            if (userMenuDropdown && !userMenuDropdown.contains(event.target)) {
+                hideUserMenu();
+            }
+        });
+
+        // Register User
+        registerForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('registerUsername').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value.trim();
+
+            if (users[username]) {
+                alert('El nombre de usuario ya existe. Por favor, elige otro.');
+                return;
+            }
+
+            users[username] = { password: password, email: email };
+            userSavedDestinations[username] = { savedDestinations: [], interests: [] }; // Initialize saved data for new user
+            currentUser = username;
+            saveData();
+            alert('Registro exitoso y sesión iniciada!');
+            hideRegisterModal();
+            updateAuthUI();
+        });
+
+        // Login User
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            if (users[username] && users[username].password === password) {
+                currentUser = username;
+                saveData();
+                alert('Inicio de sesión exitoso!');
+                hideLoginModal();
+                updateAuthUI();
+            } else {
+                alert('Usuario o contraseña incorrectos.');
+            }
+        });
+
+        // Logout User
+        function logoutUser() {
+            currentUser = null;
+            saveData();
+            alert('Sesión cerrada.');
+            updateAuthUI();
+            hideUserMenu(); // Hide the dropdown after logout
+            showTab('search'); // Redirect to search tab after logout
+        }
+
+        // --- END AUTHENTICATION SYSTEM ---
+
+
+        // Tab navigation
+        function showTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active-tab');
+                button.classList.add('text-gray-600');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            // Mark button as active
+            document.querySelector(`.tab-button[onclick="showTab('${tabId}')"]`).classList.add('active-tab');
+            document.querySelector(`.tab-button[onclick="showTab('${tabId}')"]`).classList.remove('text-gray-600');
+            
+            // Control visibility of search parameters box
+            const searchParamsBox = document.getElementById('searchParamsBox');
+            if (tabId === 'search') {
+                searchParamsBox.classList.remove('hidden');
+            } else {
+                searchParamsBox.classList.add('hidden');
+            }
+
+            // If recommendations tab, update recommendations
+            if (tabId === 'recommendations') {
+                updateRecommendations();
+            }
+            
+            // If preferences tab, update saved destinations
+            if (tabId === 'preferences') {
+                updateSavedDestinations();
+            }
+        }
+
+        // Save destination to preferences (now user-specific)
+        function savePreference(destinationName, type) {
+            if (!currentUser) {
+                alert('Debes iniciar sesión para guardar destinos.');
+                showLoginModal();
+                return;
+            }
+
+            if (!userSavedDestinations[currentUser].savedDestinations.includes(destinationName)) {
+                userSavedDestinations[currentUser].savedDestinations.push(destinationName);
+                if (!userSavedDestinations[currentUser].interests.includes(type)) {
+                    userSavedDestinations[currentUser].interests.push(type);
+                    // Update checkboxes in preferences form if on preferences tab
+                    if (document.getElementById('preferences').classList.contains('hidden') === false) {
+                        const checkbox = document.querySelector(`input[name="interest"][value="${type}"]`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                        }
+                    }
+                }
+                saveData(); // Save updated user data
+                alert(`${destinationName} ha sido añadido a tus favoritos`);
+                
+                // Update recommendations if on that tab
+                if (document.getElementById('recommendations').classList.contains('hidden') === false) {
+                    updateRecommendations();
+                }
+                
+                // Update saved destinations if on preferences tab
+                if (document.getElementById('preferences').classList.contains('hidden') === false) {
+                    updateSavedDestinations();
+                }
+            } else {
+                alert(`${destinationName} ya está en tus favoritos`);
+            }
+        }
+
+        // Update recommendations based on user preferences
+        function updateRecommendations() {
+            const recommendationsContainer = document.getElementById('user-recommendations');
+            
+            // Use current user's interests and saved destinations
+            const currentInterests = currentUser ? userSavedDestinations[currentUser].interests : [];
+            const currentSavedDestinations = currentUser ? userSavedDestinations[currentUser].savedDestinations : [];
+
+            if (currentSavedDestinations.length === 0 && currentInterests.length === 0) {
+                recommendationsContainer.innerHTML = '<p class="text-gray-500 italic">Indica tus intereses o guarda destinos para recibir recomendaciones personalizadas.</p>';
+                return;
+            }
+            
+            let recommendedDestinations = [];
+            let recommendationsHTML = '';
+            
+            // Get destinations that match user interests
+            if (currentInterests.length > 0) {
+                for (const [name, details] of Object.entries(destinations)) {
+                    if (currentInterests.includes(details.type) && 
+                        !currentSavedDestinations.includes(name)) {
+                        recommendedDestinations.push({
+                            name,
+                            ...details
+                        });
+                    }
+                }
+            }
+            
+            // Sort by popularity
+            recommendedDestinations.sort((a, b) => b.popularity - a.popularity);
+            
+            // Limit to 4 recommendations
+            recommendedDestinations = recommendedDestinations.slice(0, 4);
+            
+            // Generate HTML
+            if (recommendedDestinations.length > 0) {
+                recommendedDestinations.forEach(dest => {
+                    recommendationsHTML += `
+                        <div class="border rounded-lg p-4 cursor-pointer hover:bg-gray-100 transition" onclick="showDestinationDetail('${dest.name}')">
+                            <h4 class="font-medium">${dest.name}</h4>
+                            <p class="text-sm text-gray-600 mb-2">${dest.description}</p>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-yellow-500">${'★'.repeat(dest.rating)}${'☆'.repeat(5 - dest.rating)}</span>
+                                <button onclick="event.stopPropagation(); savePreference('${dest.name}', '${dest.type}')" class="text-blue-600 hover:text-blue-800">Guardar</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                recommendationsHTML = '<p class="text-gray-500 italic">Explora más destinos para mejorar nuestras recomendaciones.</p>';
+            }
+            
+            recommendationsContainer.innerHTML = recommendationsHTML;
+        }
+
+        // Update saved destinations list (now user-specific)
+        function updateSavedDestinations() {
+            const container = document.getElementById('savedDestinations');
+            
+            const currentSavedDestinations = currentUser ? userSavedDestinations[currentUser].savedDestinations : [];
+
+            if (currentSavedDestinations.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 italic">Aún no tienes destinos guardados. Explora y guarda tus favoritos.</p>';
+                return;
+            }
+            
+            let html = '';
+            currentSavedDestinations.forEach(name => {
+                const dest = destinations[name];
+                if (dest) { // Ensure destination exists in main data
+                    html += `
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition" onclick="showDestinationDetail('${name}')">
+                            <div>
+                                <h4 class="font-medium">${name}</h4>
+                                <p class="text-sm text-gray-600">${dest.description}</p>
+                            </div>
+                            <span class="text-yellow-500 text-sm">${'★'.repeat(dest.rating)}${'☆'.repeat(5 - dest.rating)}</span>
+                        </div>
+                    `;
+                }
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // Initialize charts
+        function initCharts() {
+            // Popular destinations chart
+            const popularDestinationsCtx = document.getElementById('popularDestinationsChart').getContext('2d');
+            new Chart(popularDestinationsCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Catedral de Sal', 'Villa de Leyva', 'Puente de Boyacá', 'Laguna Guatavita', 'Chingaza', 'Iguaque'],
+                    datasets: [{
+                        label: 'Búsquedas (miles)',
+                        data: [45, 42, 38, 35, 28, 32],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(59, 130, 246, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(59, 130, 246, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Activities chart
+            const activitiesCtx = document.getElementById('activitiesChart').getContext('2d');
+            new Chart(activitiesCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Turismo cultural', 'Naturaleza', 'Aventura', 'Gastronomía', 'Religioso'],
+                    datasets: [{
+                        data: [35, 30, 20, 10, 5],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(245, 158, 11, 0.7)',
+                            'rgba(239, 68, 68, 0.7)',
+                            'rgba(139, 92, 246, 0.7)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+
+            // Seasonality chart
+            const seasonalityCtx = document.getElementById('seasonalityChart').getContext('2d');
+            new Chart(seasonalityCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+                    datasets: [{
+                        label: 'Visitas (miles)',
+                        data: [12, 15, 18, 20, 22, 35, 40, 38, 25, 22, 25, 38],
+                        fill: false,
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Generate report
+        function generateReport() {
+            const reportOutput = document.getElementById('reportOutput');
+            
+            // In a real app, this would be more sophisticated
+            const reportHTML = `
+                <h4 class="text-lg font-medium mb-3">Reporte de Tendencias Turísticas - Boyacá y Cundinamarca</h4>
+                <div class="space-y-4 text-sm">
+                    <p><strong>Período:</strong> Últimos 12 meses</p>
+                    
+                    <div>
+                        <h5 class="font-medium mb-1">Top 3 destinos más populares:</h5>
+                        <ol class="list-decimal list-inside">
+                            <li>Catedral de Sal de Zipaquirá (45,000 búsquedas)</li>
+                            <li>Villa de Leyva (42,000 búsquedas)</li>
+                            <li>Puente de Boyacá (38,000 búsquedas)</li>
+                        </ol>
+                    </div>
+                    
+                    <div>
+                        <h5 class="font-medium mb-1">Tendencias por categoría:</h5>
+                        <ul class="list-disc list-inside">
+                            <li>El turismo cultural representa el 35% de las búsquedas</li>
+                            <li>Turismo de naturaleza con crecimiento del 12% interanual</li>
+                            <li>Mayor interés en actividades de aventura entre jóvenes (18-35 años)</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h5 class="font-medium mb-1">Temporalidad:</h5>
+                        <p>Picos de búsqueda en junio-julio (vacaciones medias) y diciembre-enero (fin de año). Los meses con menor actividad son febrero y septiembre.</p>
+                    </div>
+                    
+                    <div>
+                        <h5 class="font-medium mb-1">Recomendaciones:</h5>
+                        <ul class="list-disc list-inside">
+                            <li>Promover paquetes combinados (cultura + naturaleza)</li>
+                            <li>Reforzar promoción en temporadas bajas</li>
+                            <li>Desarrollar más contenido sobre turismo gastronómico</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mt-4 pt-4 border-t">
+                    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-sm">
+                        Imprimir Reporte
+                    </button>
+                </div>
+            `;
+            
+            reportOutput.innerHTML = reportHTML;
+            reportOutput.classList.remove('hidden');
+        }
+
+        // Show results for selected category
+        function showCategoryResults(category) {
+            const buttons = document.querySelectorAll('.category-button');
+            buttons.forEach(button => {
+                button.classList.remove('bg-blue-100', 'text-blue-800', 'active-category');
+                button.classList.add('bg-gray-100', 'text-gray-800');
+            });
+            
+            // Highlight active button
+            const activeBtn = document.querySelector(`.category-button[onclick="showCategoryResults('${category}')"]`);
+            activeBtn.classList.add('bg-blue-100', 'text-blue-800', 'active-category');
+            activeBtn.classList.remove('bg-gray-100', 'text-gray-800');
+
+            // Filter and display results
+            displayFilteredDestinations(category);
+        }
+
+        function displayFilteredDestinations(category) {
+            const container = document.getElementById('categoryResults');
+            
+            const filtered = Object.entries(destinations)
+                .filter(([name, details]) => 
+                    category === 'all' || details.type === category)
+                .map(([name, details]) => 
+                    createDestinationCard(name, details));
+            
+            container.innerHTML = filtered.length 
+                ? filtered.join('') 
+                : '<p class="text-gray-500 italic">No encontramos destinos para esta categoría.</p>';
+        }
+
+        function createDestinationCard(name, details) {
+            return `
+                <div class="bg-white rounded-xl overflow-hidden shadow-md transition duration-300 cursor-pointer" onclick="showDestinationDetail('${name}')">
+                    <img src="${details.image}" alt="${name}" class="w-full h-48 object-cover">
+                    <div class="p-5">
+                        <h3 class="text-xl font-semibold mb-2">${name}</h3>
+                        <p class="text-gray-600 mb-4">${details.description}</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-yellow-500">${'★'.repeat(details.rating)}${'☆'.repeat(5 - details.rating)}</span>
+                            <button onclick="event.stopPropagation(); savePreference('${name}', '${details.type}')" class="text-blue-600 hover:text-blue-800">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Handle search form submission
+        document.querySelector('.bg-blue-50 form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = {
+                startDate: this.querySelector('input[type="date"]:first-of-type').value,
+                endDate: this.querySelector('input[type="date"]:last-of-type').value,
+                people: this.querySelector('select:first-of-type').value,
+                budget: this.querySelector('select:last-of-type').value
+            };
+            console.log('Search parameters:', formData);
+            alert('Búsqueda realizada con los parámetros seleccionados');
+            // Optionally, you could show a detail view or filtered results here
+            // For now, we'll just alert.
+        });
+
+        // Save preferences when form is changed (now user-specific)
+        document.getElementById('preferencesForm').addEventListener('change', function(e) {
+            if (!currentUser) {
+                alert('Debes iniciar sesión para guardar tus intereses.');
+                e.target.checked = !e.target.checked; // Revert checkbox state
+                showLoginModal();
+                return;
+            }
+
+            if (e.target.type === 'checkbox') {
+                const value = e.target.value;
+                const checked = e.target.checked;
+                
+                if (checked && !userSavedDestinations[currentUser].interests.includes(value)) {
+                    userSavedDestinations[currentUser].interests.push(value);
+                } else if (!checked) {
+                    userSavedDestinations[currentUser].interests = userSavedDestinations[currentUser].interests.filter(i => i !== value);
+                }
+                saveData(); // Save updated user data
+                
+                // Update recommendations if on that tab
+                if (document.getElementById('recommendations').classList.contains('hidden') === false) {
+                    updateRecommendations();
+                }
+            }
+        });
+
+        // --- New functions for Destination Detail View ---
+
+        function showDestinationDetail(destinationName) {
+            const detailView = document.getElementById('destinationDetailView');
+            const detail = fullDestinationDetails[destinationName];
+            const baseDetail = destinations[destinationName]; // Get base details like image
+
+            if (!detail || !baseDetail) {
+                console.error("Detalles del destino no encontrados:", destinationName);
+                return;
+            }
+
+            document.getElementById('detailImage').src = baseDetail.image;
+            document.getElementById('detailImage').alt = destinationName;
+            document.getElementById('detailName').textContent = destinationName;
+            document.getElementById('detailDescription').textContent = detail.description;
+
+            // Google Maps Button
+            const googleMapsBtn = document.getElementById('googleMapsBtn');
+            if (detail.coordinates && detail.coordinates.lat && detail.coordinates.lng) {
+                googleMapsBtn.onclick = () => {
+                    window.open(`https://www.google.com/maps/search/?api=1&query=${detail.coordinates.lat},${detail.coordinates.lng}`, '_blank');
+                };
+                googleMapsBtn.classList.remove('hidden');
+            } else {
+                googleMapsBtn.classList.add('hidden');
+            }
+
+            // Helper function to generate social media links
+            function generateSocialLinks(social) {
+                let socialHtml = '';
+                if (social) {
+                    if (social.instagram) {
+                        socialHtml += `<a href="${social.instagram}" target="_blank" class="text-pink-600 hover:text-pink-800 text-xl mr-2"><i class="fab fa-instagram"></i></a>`;
+                    }
+                    if (social.facebook) {
+                        socialHtml += `<a href="${social.facebook}" target="_blank" class="text-blue-700 hover:text-blue-900 text-xl mr-2"><i class="fab fa-facebook"></i></a>`;
+                    }
+                    if (social.twitter) { // Assuming 'x-twitter' is for Twitter
+                        socialHtml += `<a href="${social.twitter}" target="_blank" class="text-gray-800 hover:text-gray-900 text-xl mr-2"><i class="fab fa-x-twitter"></i></a>`;
+                    }
+                    // Add more social media platforms as needed
+                }
+                return socialHtml;
+            }
+
+            // Populate typical food
+            const foodList = document.getElementById('detailFood');
+            foodList.innerHTML = '';
+            if (detail.food && detail.food.length > 0) {
+                detail.food.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    foodList.appendChild(li);
+                });
+            } else {
+                foodList.innerHTML = '<li class="italic text-gray-500">No hay información de gastronomía disponible.</li>';
+            }
+
+
+            // Populate typical drinks
+            const drinksList = document.getElementById('detailDrinks');
+            drinksList.innerHTML = '';
+            if (detail.drinks && detail.drinks.length > 0) {
+                detail.drinks.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    drinksList.appendChild(li);
+                });
+            } else {
+                drinksList.innerHTML = '<li class="italic text-gray-500">No hay información de bebidas disponible.</li>';
+            }
+
+            // Populate recommended hotels with contact and social media
+            const hotelsList = document.getElementById('detailHotels');
+            hotelsList.innerHTML = '';
+            if (detail.hotelsDetails && detail.hotelsDetails.length > 0) {
+                detail.hotelsDetails.forEach(hotel => {
+                    const li = document.createElement('li');
+                    li.className = 'mb-2';
+                    li.innerHTML = `
+                        <strong>${hotel.name}</strong><br>
+                        Teléfono: <a href="tel:${hotel.phone}" class="text-blue-600 hover:underline">${hotel.phone}</a><br>
+                        Correo: <a href="mailto:${hotel.email}" class="text-blue-600 hover:underline">${hotel.email}</a><br>
+                        <div class="flex items-center mt-1">
+                            ${generateSocialLinks(hotel.social)}
+                        </div>
+                    `;
+                    hotelsList.appendChild(li);
+                });
+            } else {
+                hotelsList.innerHTML = '<li class="italic text-gray-500">No hay hoteles recomendados disponibles.</li>';
+            }
+
+            // Populate restaurants with contact and social media
+            const restaurantsSection = document.getElementById('detailRestaurantsSection'); // New section ID
+            const restaurantsList = document.getElementById('detailRestaurants'); // New list ID
+            restaurantsList.innerHTML = '';
+            if (detail.restaurants && detail.restaurants.length > 0) {
+                restaurantsSection.classList.remove('hidden'); // Show the section
+                detail.restaurants.forEach(restaurant => {
+                    const li = document.createElement('li');
+                    li.className = 'mb-2';
+                    li.innerHTML = `
+                        <strong>${restaurant.name}</strong><br>
+                        Teléfono: <a href="tel:${restaurant.phone}" class="text-blue-600 hover:underline">${restaurant.phone}</a><br>
+                        Correo: <a href="mailto:${restaurant.email}" class="text-blue-600 hover:underline">${restaurant.email}</a><br>
+                        <div class="flex items-center mt-1">
+                            ${generateSocialLinks(restaurant.social)}
+                        </div>
+                    `;
+                    restaurantsList.appendChild(li);
+                });
+            } else {
+                restaurantsSection.classList.add('hidden'); // Hide the section if no restaurants
+                restaurantsList.innerHTML = ''; // Clear content
+            }
+
+            // Populate other activities
+            const activitiesList = document.getElementById('detailActivities');
+            activitiesList.innerHTML = '';
+            if (detail.activities && detail.activities.length > 0) {
+                detail.activities.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    activitiesList.appendChild(li);
+                });
+            } else {
+                activitiesList.innerHTML = '<li class="italic text-gray-500">No hay actividades adicionales de interés disponibles.</li>';
+            }
+
+            detailView.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling background
+        }
+
+        function hideDestinationDetail() {
+            const detailView = document.getElementById('destinationDetailView');
+            detailView.classList.remove('active');
+            document.body.style.overflow = ''; // Restore scrolling
+        }
+
+        // Modify search input to show detail on search (simple example)
+        document.querySelector('#search .relative input[type="text"]').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const searchTerm = this.value.trim();
+                if (destinations[searchTerm]) {
+                    showDestinationDetail(searchTerm);
+                } else {
+                    alert(`No se encontraron detalles para "${searchTerm}".`);
+                }
+                this.value = ''; // Clear search input
+            }
+        });
+
+        // --- CHATBOT FUNCTIONALITY ---
+        const openChatbotBtn = document.getElementById('openChatbotBtn');
+        const closeChatbotBtn = document.getElementById('closeChatbotBtn');
+        const chatbotWindow = document.getElementById('chatbotWindow');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+
+        // Toggle chatbot window visibility
+        openChatbotBtn.addEventListener('click', () => {
+            chatbotWindow.classList.toggle('hidden');
+            openChatbotBtn.classList.toggle('hidden'); // Hide the open button when window is open
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
+        });
+
+        closeChatbotBtn.addEventListener('click', () => {
+            chatbotWindow.classList.add('hidden');
+            openChatbotBtn.classList.remove('hidden'); // Show the open button when window is closed
+        });
+
+        // Function to add a message to the chat window
+        function addMessage(message, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('flex', 'mb-2');
+
+            if (sender === 'user') {
+                messageDiv.classList.add('justify-end');
+                messageDiv.innerHTML = `
+                    <div class="bg-blue-500 text-white p-2 rounded-lg max-w-[70%]">
+                        ${message}
+                    </div>
+                `;
+            } else { // sender === 'bot'
+                messageDiv.classList.add('justify-start');
+                messageDiv.innerHTML = `
+                    <div class="bg-gray-200 text-gray-800 p-2 rounded-lg max-w-[70%]">
+                        ${message}
+                    </div>
+                `;
+            }
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to the latest message
+        }
+
+        // Simulate AI responses
+        function getBotResponse(userMessage) {
+            const lowerCaseMessage = userMessage.toLowerCase();
+            let response = "Lo siento, no entendí tu pregunta. ¿Puedes reformularla o preguntar sobre destinos, actividades o presupuesto?";
+
+            // Basic greetings
+            if (lowerCaseMessage.includes("hola") || lowerCaseMessage.includes("saludos")) {
+                response = "¡Hola! Soy tu asistente de viajes. ¿En qué puedo ayudarte hoy?";
+            }
+            // Questions about destinations
+            else if (lowerCaseMessage.includes("destinos") || lowerCaseMessage.includes("a dónde ir")) {
+                const destinationNames = Object.keys(destinations).join(', ');
+                response = `Claro, tenemos destinos increíbles como: ${destinationNames}. ¿Cuál te interesa más?`;
+            }
+            // Questions about specific destination details
+            else if (lowerCaseMessage.includes("cartagena") || lowerCaseMessage.includes("medellín") || lowerCaseMessage.includes("villa de leyva") || lowerCaseMessage.includes("guatavita") || lowerCaseMessage.includes("chingaza") || lowerCaseMessage.includes("zipaquirá") || lowerCaseMessage.includes("boyacá") || lowerCaseMessage.includes("iguaque")) {
+                let foundDestination = null;
+                for (const name in destinations) {
+                    if (lowerCaseMessage.includes(name.toLowerCase().replace(/de |la |el |los |las /g, ''))) {
+                        foundDestination = name;
+                        break;
+                    }
+                }
+                if (foundDestination) {
+                    const detail = fullDestinationDetails[foundDestination];
+                    response = `¡Excelente elección! ${foundDestination} es ${detail.description}. ¿Te gustaría saber sobre su gastronomía, hoteles o actividades?`;
+                } else {
+                    response = "No encontré información detallada para ese destino específico. ¿Podrías ser más preciso?";
+                }
+            }
+            // Questions about activities
+            else if (lowerCaseMessage.includes("actividades") || lowerCaseMessage.includes("qué hacer")) {
+                response = "Ofrecemos actividades de naturaleza, cultura, aventura y gastronomía. ¿Qué tipo de experiencia buscas?";
+            }
+            // Questions about budget
+            else if (lowerCaseMessage.includes("presupuesto") || lowerCaseMessage.includes("cuánto cuesta")) {
+                response = "El presupuesto depende mucho del destino, la duración y el tipo de actividades. ¿Tienes alguna idea de a dónde te gustaría ir para darte una estimación?";
+            }
+            // Simulate itinerary planning (very basic for now)
+            else if (lowerCaseMessage.includes("planear viaje") || lowerCaseMessage.includes("itinerario")) {
+                response = "Para planear tu viaje, necesito saber: ¿A dónde quieres ir, cuántos días tienes y qué tipo de turismo te interesa (aventura, cultura, etc.)?";
+            }
+            // Redirection to 360 views (simulated)
+            else if (lowerCaseMessage.includes("ver en 360") || lowerCaseMessage.includes("vista 360")) {
+                response = "¡Claro! Aunque no puedo mostrarte la vista 360° directamente aquí, puedes explorar nuestros destinos en la sección 'Explora antes de viajar' (simulado).";
+            }
+            // Fallback for specific keywords related to existing data
+            else if (lowerCaseMessage.includes("gastronomia") || lowerCaseMessage.includes("comida")) {
+                response = "La gastronomía de la región es muy variada. ¿De qué destino te gustaría saber más sobre su comida típica?";
+            }
+            else if (lowerCaseMessage.includes("hoteles") || lowerCaseMessage.includes("alojamiento")) {
+                response = "Tenemos varias opciones de alojamiento. ¿Para qué destino buscas hoteles?";
+            }
+            else if (lowerCaseMessage.includes("transporte")) {
+                response = "El transporte varía según el destino. ¿A qué lugar te refieres?";
+            }
+            else if (lowerCaseMessage.includes("gracias") || lowerCaseMessage.includes("muchas gracias")) {
+                response = "De nada, ¡es un placer ayudarte! Si tienes más preguntas, no dudes en consultarme.";
+            }
+
+            return response;
+        }
+
+        // Send message functionality
+        function sendMessage() {
+            const userMessage = chatInput.value.trim();
+            if (userMessage) {
+                addMessage(userMessage, 'user');
+                chatInput.value = ''; // Clear input
+
+                // Simulate bot typing delay
+                setTimeout(() => {
+                    const botResponse = getBotResponse(userMessage);
+                    addMessage(botResponse, 'bot');
+                }, 500); // 0.5 second delay
+            }
+        }
+
+        // Event listeners for sending messages
+        sendMessageBtn.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        // --- END CHATBOT FUNCTIONALITY ---
+
+        // Initial UI update on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Show search tab by default
+            showTab('search');
+            // Show initial results for 'all' category
+            showCategoryResults('all');
+            // Initialize charts
+            initCharts();
+            // Update authentication UI based on current user status
+            updateAuthUI();
+        });
+    </script>
+</body>
+</html>
